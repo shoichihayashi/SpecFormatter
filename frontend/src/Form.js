@@ -1,35 +1,55 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import { FileUploader } from "react-drag-drop-files";
+import "./styles.css"
+
+
+const fileTypes = ["docx"]
 
 const Form = () => {
     const [sourceFile, setSource] = useState(null)
-    const [targetFile, setTarget] = useState(null)
+    const [targetFiles, setTargets] = useState([])
     const [message, setMessage] = useState('')
+    const [downloadLink, setDownloadLink] = useState('')
 
-    const handleSource = (e) => {
-        setSource(e.target.files[0])
+    const handleSource = (file) => {
+        setDownloadLink('')
+        setSource(file)
     }
 
-    const handleTarget = (e) => {
-        setTarget(e.target.files[0])
+    const handleTarget = (files) => {
+        setDownloadLink('')
+        const filesArray = Array.isArray(files) ? files : Array.from(files);
+        setTargets(filesArray)
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
 
         const formData = new FormData()
+
+        // single source file
         formData.append('source_file', sourceFile)
-        formData.append('target_file', targetFile)
+
+        // for loop to append target files to the array
+        targetFiles.forEach((file, index) => {
+            formData.append(`target_file_${index}`, file)
+        })
 
         try {
             const response = await axios.post('http://localhost:5000/process', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+                responseType: 'blob'
             })
-            setMessage(response.data.message)
+
+            if (response.data) {
+                setMessage(response.data.message)
+
+                const url = window.URL.createObjectURL(new Blob([response.data]))
+                setDownloadLink(url)
+            } else {
+                setMessage('Error processing files')
+            }
         } catch(error) {
-            console.error('Error uploading files:', error)
             setMessage('Error processing the files')
         }
     }
@@ -40,15 +60,47 @@ const Form = () => {
             <form onSubmit={handleSubmit}>
                 <div>
                     <label>Source document:</label>
-                    <input type="file" onChange={handleSource} />
+                    <FileUploader
+                        types={fileTypes}
+                        multiple={false}
+                        name="sourceFile"
+                        handleChange={handleSource}
+                        uploadedLabel="File uploaded successfully!"
+                    />
+                    <p>{sourceFile ? `File name: ${sourceFile.name}` : "No files uploaded yet"}</p>
                 </div>
                 <div>
                     <label>Target document:</label>
-                    <input type="file" onChange={handleTarget} />
+                    <FileUploader
+                        types={fileTypes}
+                        multiple={true}
+                        name="targetFiles"
+                        handleChange={handleTarget}
+                        uploadedLabel="File(s) uploaded successfully!"
+                    />
+                    <p>
+                        {targetFiles.length > 0 ? (
+                            targetFiles.map((file, index) => (
+                                <span key={index}>
+                                    File name: {file.name}
+                                    <br />
+                                </span>
+                            ))
+                        ) : (
+                            "No files uploaded yet"
+                        )}
+                    </p>
                 </div>
-                <button type="submit">Upload and Format</button>
+                {!downloadLink && (
+                    <button type="submit">Upload and Format</button>
+                )}
             </form>
             <p>{message}</p>
+            {downloadLink && (
+                <a href={downloadLink} download="formatted_files.zip">
+                    <button>Download Formatted Document</button>
+                </a>
+            )}
         </div>
     )
 }

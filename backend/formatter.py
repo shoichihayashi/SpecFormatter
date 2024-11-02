@@ -44,8 +44,8 @@ class Formatter:
         list_formatting = {}
         # check if it's a list
         if self.is_list_paragraph(paragraph):
-            print('extracting list formatting')
-            print('paragraph: ', paragraph.runs[0].font.name)
+            # print('extracting list formatting')
+            # print('paragraph: ', paragraph.runs[0].font.name)
 
             p = paragraph._element
             pPr = p.find(qn('w:pPr'))
@@ -80,8 +80,8 @@ class Formatter:
             ilvl = OxmlElement('w:ilvl')
             ilvl.set(qn('w:val'), list_formatting['ilvl'])
 
-            print('numId: ', numId)
-            print('ilvl: ', ilvl)
+            # print('numId: ', numId)
+            # print('ilvl: ', ilvl)
 
             numPr.append(numId)
             numPr.append(ilvl)
